@@ -12,7 +12,9 @@
 """
 
 import argparse
+import pickle
 import time
+import os.path
 from twython import Twython
 from twython import TwythonError
 
@@ -77,11 +79,11 @@ def get_trottle_time():
     elif (next_reset > 0):
         sleep_time = int(next_reset) - ts
     else:
-        sleep_time = DEFAULT_SLEEP
+        sleep_time = 60
     
     # always make sure non-negative value is returned 
     if sleep_time < 0:
-        sleep_time = 0
+        sleep_time = 10     # just in case
     
     print "Sleeping for " + str(sleep_time) + " sec..."
     return sleep_time
@@ -253,15 +255,25 @@ if __name__ == '__main__':
     follower_ids = set(follower_ids)
     print "Retrieved list of followers! Donwloading content..."
     
-    user_timeline = get_timeline(screen_name = screen_name)
-    print "Retreived timeline for user '" + screen_name + "'"
+    # download the timelines and save in temporary files
+    if not os.path.isfile(screen_name + '.timeline'):
+        user_timeline = get_timeline(screen_name = screen_name)
+        pickle.dump(user_timeline, open(screen_name + '.timeline', 'wb'))
+        print "Retreived timeline for user '" + screen_name + "'"
     
+    for user_id in follower_ids:
+        if not os.path.isfile(str(user_id) + '.timeline'):
+            user_timeline = get_timeline(user_id = user_id)
+            pickle.dump(user_timeline, open(str(user_id) + '.timeline', 'wb'))
+            print "Retreived timeline for user '" + str(user_id) + "'"
+    
+    # load the timelines from the temp files and build the connection matrix
+    user_timline = pickle.load(open(screen_name + '.timeline', 'rb'))
     build_connections(user_timeline)
     print "Built connections for user '" + screen_name + "'"
     
     for user_id in follower_ids:
-        user_timeline = get_timeline(user_id = user_id)
-        print "Retreived timeline for user '" + str(user_id) + "'"
+        user_timeline = pickle.load(open(str(user_id) + '.timeline', 'rb'))
         build_connections(user_timeline)
         print "Built connections for user '" + str(user_id) + "'"
 
