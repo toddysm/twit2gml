@@ -30,6 +30,9 @@ nosetests.xml
 # Translations
 *.mo
 
+# Generated files
+*.gml
+
 # Mr Developer
 .mr.developer.cfg
 .project
