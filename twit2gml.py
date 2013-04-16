@@ -268,14 +268,16 @@ if __name__ == '__main__':
             print "Retreived timeline for user '" + str(user_id) + "'"
     
     # load the timelines from the temp files and build the connection matrix
-    user_timline = pickle.load(open(screen_name + '.timeline', 'rb'))
-    build_connections(user_timeline)
-    print "Built connections for user '" + screen_name + "'"
+    if os.path.isfile(screen_name + '.timeline'):
+        user_timline = pickle.load(open(screen_name + '.timeline', 'rb'))
+        build_connections(user_timeline)
+        print "Built connections for user '" + screen_name + "'"
     
     for user_id in follower_ids:
-        user_timeline = pickle.load(open(str(user_id) + '.timeline', 'rb'))
-        build_connections(user_timeline)
-        print "Built connections for user '" + str(user_id) + "'"
+        if os.path.isfile(str(user_id) + '.timeline'):
+            user_timeline = pickle.load(open(str(user_id) + '.timeline', 'rb'))
+            build_connections(user_timeline)
+            print "Built connections for user '" + str(user_id) + "'"
 
     print "Link matrix created! Creating the GML file..."
 
