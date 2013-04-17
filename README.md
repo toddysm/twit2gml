@@ -13,4 +13,8 @@ In order to use the code you need to install the following Python libraries:
 
 Usage
 =====
-$ python twit2gml --key [[API_Key]] --secret [[API_Secret]] --screen_name [[Twitter_screen_name]]
+$ python twit2gml.py --key API_Key --secret API_Secret --auth_token OAuth_token --auth_secret OAuth_Secret --screen_name Twitter_screen_name
+
+You can get detailed description of the parameters if you type
+
+$ python twit2gml.py --help
