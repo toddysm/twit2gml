@@ -159,7 +159,7 @@ def get_profiles(ids):
         follower_profiles.extend(profiles)
         total += len(profiles)
         
-        print "Downloaded " + total + " profiles so far..."
+        print "Downloaded " + str(total) + " profiles so far..."
         
         if len(profiles) < 100:
             break
