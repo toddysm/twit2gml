@@ -34,6 +34,7 @@ client = None
 screen_name = None
 
 follower_ids = []
+follower_names = []
 link_matrix = {}
 
 def connect():
@@ -121,7 +122,7 @@ def get_timeline(screen_name = None, user_id = None):
     try:
         max_id = 0        
         timeline = client.getUserTimeline(screen_name = screen_name, user_id = user_id,
-                        count=200, exclude_replies=False, trim_user=True, include_rts=True)
+                        count=200, exclude_replies=False, trim_user=False, include_rts=True)
         
         while not len(timeline) == 0:
             for tweet in timeline:
@@ -135,12 +136,39 @@ def get_timeline(screen_name = None, user_id = None):
             time.sleep(get_trottle_time())
             
             timeline = client.getUserTimeline(screen_name = screen_name, user_id = user_id,
-                        count=200, exclude_replies=False, trim_user=True, include_rts=True, \
+                        count=200, exclude_replies=False, trim_user=False, include_rts=True, \
                         max_id = max_id)
     except TwythonError, e:
         print e
     
     return user_timeline
+
+def get_profiles(ids):
+    """Retrieves the full profiles for the users with the specified IDs
+    
+    :param ids: The user IDs, whose profiles to retrieve
+    
+    :return: List of full profiles
+    """
+    left = 0
+    right = 100
+    total = 0
+    follower_profiles = []
+    while True:
+        profiles = client.lookupUser(user_id=','.join(str(s) for s in ids[left:right]))
+        follower_profiles.extend(profiles)
+        total += len(profiles)
+        
+        print "Downloaded " + total + " profiles so far..."
+        
+        if len(profiles) < 100:
+            break
+        else:
+            time.sleep(get_trottle_time())
+            left = right
+            right += 100
+    
+    return follower_profiles
 
 def build_connections(timeline):
     """Creates connection between the user whos timeline this is and any user
@@ -151,16 +179,17 @@ def build_connections(timeline):
     global link_matrix
     
     for tweet in timeline:
-        user_id = tweet['user']['id']
+        user_name = tweet['user']['screen_name']
         
-        if tweet['in_reply_to_user_id'] and tweet['in_reply_to_user_id'] in follower_ids:
-            if user_id in link_matrix.keys():
+        if tweet['in_reply_to_screen_name'] and tweet['in_reply_to_screen_name'] \
+        in follower_names and not tweet['in_reply_to_screen_name'] == user_name:
+            if user_name in link_matrix.keys():
                 # user already has links
-                link_matrix[user_id].append(tweet['in_reply_to_user_id'])
+                link_matrix[user_name].append(tweet['in_reply_to_screen_name'])
             else:
                 # create new list of connections for this user
-                temp_list = [tweet['in_reply_to_user_id']]
-                link_matrix[user_id] = temp_list
+                temp_list = [tweet['in_reply_to_screen_name']]
+                link_matrix[user_name] = temp_list
 
 def create_node_str(node_id):
     """Creates node for the GML file
@@ -190,19 +219,19 @@ def build_gml():
     gml_file.write("graph\n[\n")
     
     # create the nodes
-    for user_id in follower_ids:
-        node_str = create_node_str(user_id)
+    for screen_name in follower_names:
+        node_str = create_node_str(screen_name)
         gml_file.write(node_str)
     
     # create the edges
-    for user_id in link_matrix.keys():
+    for screen_name in link_matrix.keys():
         # if the user has links
-        if link_matrix[user_id]:
-            link_set = set(link_matrix[user_id])    # unique set
+        if link_matrix[screen_name]:
+            link_set = set(link_matrix[screen_name])    # unique set
             
             # create the edges
             for link in link_set:
-                edge_str = create_edge_str(user_id, link)
+                edge_str = create_edge_str(screen_name, link)
                 gml_file.write(edge_str)
     
     # write the closing bracket
@@ -252,36 +281,45 @@ if __name__ == '__main__':
     
     get_followers()
     #convert to a set for faster access
-    follower_ids = set(follower_ids)
-    print "Retrieved list of followers! Donwloading content..."
+    #follower_ids = set(follower_ids)
+    print "Retrieved list of followers! Downloading profiles..."
+    
+    # download the profiles for the followers
+    if not os.path.isfile('screen.names'):    
+        profiles = None
+        if not os.path.isfile('users.profiles'):
+            profiles = get_profiles(follower_ids)
+            pickle.dump(profiles, open('users.profiles', 'wb'))
+            print "Retrieved user profiles! Extracting the screen names..."
+        
+        # iterate over the profiles and store the screen names
+        if not profiles:
+            profiles = pickle.load(open('users.profiles', 'rb'))
+        
+        for profile in profiles:
+            follower_names.append(profile['screen_name'])
+        
+        pickle.dump(follower_names, open('screen.names', 'wb'))
+    else:
+        follower_names = pickle.load(open('screen.names', 'rb'))
     
     # download the timelines and save in temporary files
-    if not os.path.isfile(screen_name + '.timeline'):
-        user_timeline = get_timeline(screen_name = screen_name)
-        pickle.dump(user_timeline, open(screen_name + '.timeline', 'wb'))
-        print "Retreived timeline for user '" + screen_name + "'"
-    
-    for user_id in follower_ids:
-        if not os.path.isfile(str(user_id) + '.timeline'):
-            user_timeline = get_timeline(user_id = user_id)
-            pickle.dump(user_timeline, open(str(user_id) + '.timeline', 'wb'))
-            print "Retreived timeline for user '" + str(user_id) + "'"
+    for name in follower_names:
+        if not os.path.isfile(name + '.timeline'):
+            user_timeline = get_timeline(screen_name = name)
+            pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
+            print "Retreived timeline for user '" + name + "'"
     
     # load the timelines from the temp files and build the connection matrix
-    if os.path.isfile(screen_name + '.timeline'):
-        user_timeline = pickle.load(open(screen_name + '.timeline', 'rb'))
-        build_connections(user_timeline)
-        print "Built connections for user '" + screen_name + "'"
-    
-    for user_id in follower_ids:
-        if os.path.isfile(str(user_id) + '.timeline'):
-            user_timeline = pickle.load(open(str(user_id) + '.timeline', 'rb'))
+    for name in follower_names:
+        if os.path.isfile(name + '.timeline'):
+            user_timeline = pickle.load(open(name + '.timeline', 'rb'))
             build_connections(user_timeline)
-            print "Built connections for user '" + str(user_id) + "'"
-
+            print "Built connections for user '" + name + "'"
+    
     print "Link matrix created! Creating the GML file..."
-
+    
     build_gml()
-
+    
     print "Complete!"
     print "You can find the twit2gml.gml file in the current folder"

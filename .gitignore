@@ -33,6 +33,8 @@ nosetests.xml
 # Generated files
 *.gml
 *.timeline
+*.names
+*.profiles
 
 # Mr Developer
 .mr.developer.cfg
