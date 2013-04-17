@@ -22,8 +22,8 @@ from twython import TwythonError
 GML_FILE_NAME = 'twit2gml.gml'
 
 # Twitter API headers
-X_RATE_LIMIT_REMAINING = 'x-ratelimit-remaining'
-X_RATE_LIMIT_RESET = 'x-ratelimit-reset'
+X_RATE_LIMIT_REMAINING = 'x-rate-limit-remaining'
+X_RATE_LIMIT_RESET = 'x-rate-limit-reset'
 
 # Globals - those get populated throughout the code
 api_key = None
@@ -307,8 +307,11 @@ if __name__ == '__main__':
     for name in follower_names:
         if not os.path.isfile(name + '.timeline'):
             user_timeline = get_timeline(screen_name = name)
-            pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
-            print "Retreived timeline for user '" + name + "'"
+            if not len(user_timeline) == 0:
+                pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
+                print "Retreived timeline for user '" + name + "'"
+            else:
+                print "Timeline for user '" + name + "' is emtpy or couldn't be retrieved!"
     
     # load the timelines from the temp files and build the connection matrix
     for name in follower_names:
