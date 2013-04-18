@@ -271,47 +271,55 @@ if __name__ == '__main__':
     screen_name = args.screen_name
     print "Initialization completed! Establishing Twitter client..."
     
-    connect()
-    print "Twitter client created! Downloading followers for user '" + \
-        screen_name + "'..."
-    
-    # store the user ID into the list of followers
-    user_profile = get_user_profile(screen_name = screen_name)
-    follower_ids.append(user_profile['id'])
-    
-    get_followers()
-    #convert to a set for faster access
-    #follower_ids = set(follower_ids)
-    print "Retrieved list of followers! Downloading profiles..."
-    
-    # download the profiles for the followers
-    if not os.path.isfile('screen.names'):    
-        profiles = None
-        if not os.path.isfile('users.profiles'):
-            profiles = get_profiles(follower_ids)
-            pickle.dump(profiles, open('users.profiles', 'wb'))
-            print "Retrieved user profiles! Extracting the screen names..."
-        
-        # iterate over the profiles and store the screen names
-        if not profiles:
-            profiles = pickle.load(open('users.profiles', 'rb'))
-        
-        for profile in profiles:
-            follower_names.append(profile['screen_name'])
-        
-        pickle.dump(follower_names, open('screen.names', 'wb'))
-    else:
-        follower_names = pickle.load(open('screen.names', 'rb'))
-    
-    # download the timelines and save in temporary files
-    for name in follower_names:
-        if not os.path.isfile(name + '.timeline'):
-            user_timeline = get_timeline(screen_name = name)
-            if not len(user_timeline) == 0:
-                pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
-                print "Retreived timeline for user '" + name + "'"
+    completed = False
+    while not completed:
+        try:
+            connect()
+            print "Twitter client created! Downloading followers for user '" + \
+                screen_name + "'..."
+            
+            # store the user ID into the list of followers
+            user_profile = get_user_profile(screen_name = screen_name)
+            follower_ids.append(user_profile['id'])
+            
+            get_followers()
+            #convert to a set for faster access
+            #follower_ids = set(follower_ids)
+            print "Retrieved list of followers! Downloading profiles..."
+            
+            # download the profiles for the followers
+            if not os.path.isfile('screen.names'):    
+                profiles = None
+                if not os.path.isfile('users.profiles'):
+                    profiles = get_profiles(follower_ids)
+                    pickle.dump(profiles, open('users.profiles', 'wb'))
+                    print "Retrieved user profiles! Extracting the screen names..."
+                
+                # iterate over the profiles and store the screen names
+                if not profiles:
+                    profiles = pickle.load(open('users.profiles', 'rb'))
+                
+                for profile in profiles:
+                    follower_names.append(profile['screen_name'])
+                
+                pickle.dump(follower_names, open('screen.names', 'wb'))
             else:
-                print "Timeline for user '" + name + "' is emtpy or couldn't be retrieved!"
+                follower_names = pickle.load(open('screen.names', 'rb'))
+            
+            # download the timelines and save in temporary files
+            for name in follower_names:
+                if not os.path.isfile(name + '.timeline'):
+                    user_timeline = get_timeline(screen_name = name)
+                    if not len(user_timeline) == 0:
+                        pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
+                        print "Retreived timeline for user '" + name + "'"
+                    else:
+                        print "Timeline for user '" + name + "' is emtpy or couldn't be retrieved!"
+            
+            # it is only complete when it reaches this statement :)
+            completed = True
+        except Exception, e:
+            print e
     
     # load the timelines from the temp files and build the connection matrix
     for name in follower_names:
