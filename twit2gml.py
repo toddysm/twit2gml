@@ -52,7 +52,7 @@ def get_user_profile(screen_name = None, user_id = None):
     :param screen_name: Twitter user's screen_name
     :param user_id: Twitter user's ID
     """
-    return client.showUser(screen_name = screen_name, user_id = user_id)
+    return client.show_user(screen_name = screen_name, user_id = user_id)
 
 def get_trottle_time():
     """Calculates how many seconds the thread should sleep after the last
@@ -100,7 +100,7 @@ def get_followers():
     total = 0
     while True:
         try:
-            data = client.getFollowersIDs(screen_name=screen_name, cursor=next_cursor)
+            data = client.get_followers_ids(screen_name=screen_name, cursor=next_cursor)
             follower_ids.extend(data['ids'])
             total += len(data['ids'])
             print "Donwloaded " + str(total) + " follower IDs so far..."
@@ -121,7 +121,7 @@ def get_timeline(screen_name = None, user_id = None):
     user_timeline = []
     try:
         max_id = 0        
-        timeline = client.getUserTimeline(screen_name = screen_name, user_id = user_id,
+        timeline = client.get_user_timeline(screen_name = screen_name, user_id = user_id,
                         count=200, exclude_replies=False, trim_user=False, include_rts=True)
         
         while not len(timeline) == 0:
@@ -135,7 +135,7 @@ def get_timeline(screen_name = None, user_id = None):
             #sleep before the next API call else we will reach the limit
             time.sleep(get_trottle_time())
             
-            timeline = client.getUserTimeline(screen_name = screen_name, user_id = user_id,
+            timeline = client.get_user_timeline(screen_name = screen_name, user_id = user_id,
                         count=200, exclude_replies=False, trim_user=False, include_rts=True, \
                         max_id = max_id)
     except TwythonError, e:
@@ -155,7 +155,7 @@ def get_profiles(ids):
     total = 0
     follower_profiles = []
     while True:
-        profiles = client.lookupUser(user_id=','.join(str(s) for s in ids[left:right]))
+        profiles = client.lookup_user(user_id=','.join(str(s) for s in ids[left:right]))
         follower_profiles.extend(profiles)
         total += len(profiles)
         
