@@ -86,7 +86,7 @@ def get_trottle_time():
     if sleep_time < 0:
         sleep_time = 10     # just in case
     
-    print "Sleeping for " + str(sleep_time) + " sec..."
+    print("Sleeping for " + str(sleep_time) + " sec...")
     return sleep_time
 
 def get_followers():
@@ -103,7 +103,7 @@ def get_followers():
             data = client.get_followers_ids(screen_name=screen_name, cursor=next_cursor)
             follower_ids.extend(data['ids'])
             total += len(data['ids'])
-            print "Donwloaded " + str(total) + " follower IDs so far..."
+            print("Donwloaded " + str(total) + " follower IDs so far...")
             if data['next_cursor'] == 0 or data['next_cursor'] == data['previous_cursor']:
                 break
             else:
@@ -111,7 +111,7 @@ def get_followers():
                 # sleep if there are more pages to fetch
                 time.sleep(get_trottle_time())
         except TwythonError, e:
-            print e
+            print(e)
 
 def get_timeline(screen_name = None, user_id = None):
     """Retrieves the timeline for the specified user
@@ -129,8 +129,8 @@ def get_timeline(screen_name = None, user_id = None):
                 user_timeline.append(tweet)
                 max_id = tweet['id'] - 1 # to exclude the last fetched tweet
             
-            print "Downloaded " + str(len(user_timeline)) + " tweets for user " + \
-                str(screen_name) + "/" + str(user_id) + " so far..."
+            print("Downloaded " + str(len(user_timeline)) + " tweets for user " + \
+                str(screen_name) + "/" + str(user_id) + " so far...")
             
             #sleep before the next API call else we will reach the limit
             time.sleep(get_trottle_time())
@@ -139,7 +139,7 @@ def get_timeline(screen_name = None, user_id = None):
                         count=200, exclude_replies=False, trim_user=False, include_rts=True, \
                         max_id = max_id)
     except TwythonError, e:
-        print e
+        print(e)
     
     return user_timeline
 
@@ -159,7 +159,7 @@ def get_profiles(ids):
         follower_profiles.extend(profiles)
         total += len(profiles)
         
-        print "Downloaded " + str(total) + " profiles so far..."
+        print("Downloaded " + str(total) + " profiles so far...")
         
         if len(profiles) < 100:
             break
@@ -269,14 +269,14 @@ if __name__ == '__main__':
     auth_token = args.auth_token
     auth_secret = args.auth_secret
     screen_name = args.screen_name
-    print "Initialization completed! Establishing Twitter client..."
+    print("Initialization completed! Establishing Twitter client...")
     
     completed = False
     while not completed:
         try:
             connect()
-            print "Twitter client created! Downloading followers for user '" + \
-                screen_name + "'..."
+            print("Twitter client created! Downloading followers for user '" + \
+                screen_name + "'...")
             
             # store the user ID into the list of followers
             user_profile = get_user_profile(screen_name = screen_name)
@@ -285,7 +285,7 @@ if __name__ == '__main__':
             get_followers()
             #convert to a set for faster access
             #follower_ids = set(follower_ids)
-            print "Retrieved list of followers! Downloading profiles..."
+            print("Retrieved list of followers! Downloading profiles...")
             
             # download the profiles for the followers
             if not os.path.isfile('screen.names'):    
@@ -293,7 +293,7 @@ if __name__ == '__main__':
                 if not os.path.isfile('users.profiles'):
                     profiles = get_profiles(follower_ids)
                     pickle.dump(profiles, open('users.profiles', 'wb'))
-                    print "Retrieved user profiles! Extracting the screen names..."
+                    print("Retrieved user profiles! Extracting the screen names...")
                 
                 # iterate over the profiles and store the screen names
                 if not profiles:
@@ -312,25 +312,25 @@ if __name__ == '__main__':
                     user_timeline = get_timeline(screen_name = name)
                     if not len(user_timeline) == 0:
                         pickle.dump(user_timeline, open(name + '.timeline', 'wb'))
-                        print "Retreived timeline for user '" + name + "'"
+                        print("Retreived timeline for user '" + name + "'")
                     else:
-                        print "Timeline for user '" + name + "' is emtpy or couldn't be retrieved!"
+                        print("Timeline for user '" + name + "' is emtpy or couldn't be retrieved!")
             
             # it is only complete when it reaches this statement :)
             completed = True
         except Exception, e:
-            print e
+            print(e)
     
     # load the timelines from the temp files and build the connection matrix
     for name in follower_names:
         if os.path.isfile(name + '.timeline'):
             user_timeline = pickle.load(open(name + '.timeline', 'rb'))
             build_connections(user_timeline)
-            print "Built connections for user '" + name + "'"
+            print("Built connections for user '" + name + "'")
     
-    print "Link matrix created! Creating the GML file..."
+    print("Link matrix created! Creating the GML file...")
     
     build_gml()
     
-    print "Complete!"
-    print "You can find the twit2gml.gml file in the current folder"
+    print("Complete!")
+    print("You can find the twit2gml.gml file in the current folder")
