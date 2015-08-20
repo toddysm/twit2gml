@@ -110,7 +110,7 @@ def get_followers():
                 next_cursor = data['next_cursor']
                 # sleep if there are more pages to fetch
                 time.sleep(get_trottle_time())
-        except TwythonError, e:
+        except TwythonError as e:
             print(e)
 
 def get_timeline(screen_name = None, user_id = None):
@@ -138,7 +138,7 @@ def get_timeline(screen_name = None, user_id = None):
             timeline = client.get_user_timeline(screen_name = screen_name, user_id = user_id,
                         count=200, exclude_replies=False, trim_user=False, include_rts=True, \
                         max_id = max_id)
-    except TwythonError, e:
+    except TwythonError as e:
         print(e)
     
     return user_timeline
@@ -318,7 +318,7 @@ if __name__ == '__main__':
             
             # it is only complete when it reaches this statement :)
             completed = True
-        except Exception, e:
+        except Exception as e:
             print(e)
     
     # load the timelines from the temp files and build the connection matrix
